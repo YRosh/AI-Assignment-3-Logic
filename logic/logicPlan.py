@@ -52,8 +52,17 @@ def sentence1() -> Expr:
     (not A) if and only if ((not B) or C)
     (not A) or (not B) or C
     """
+
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    A = Expr("A")
+    B = Expr("B")
+    C = Expr("C")
+
+    a_or_b = A | B
+    a_implies_b_c = ~A % (~B | C)
+    neg_a_or_neg_b_or_c = disjoin([~A, ~B, C])
+
+    return conjoin([a_or_b, a_implies_b_c, neg_a_or_neg_b_or_c])
     "*** END YOUR CODE HERE ***"
 
 
@@ -66,7 +75,17 @@ def sentence2() -> Expr:
     (not D) implies C
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    A = Expr("A")
+    B = Expr("B")
+    C = Expr("C")
+    D = Expr("D")
+
+    c_bi_implies_b_d = C % (B | D)
+    a_implies_not_b_d = A >> (~B & ~D)
+    not_b_c_implies_a = ~(B & ~C) >> A
+    not_d_implies_c = ~D >> C
+
+    return conjoin([c_bi_implies_b_d, a_implies_not_b_d, not_b_c_implies_a, not_d_implies_c])
     "*** END YOUR CODE HERE ***"
 
 
@@ -84,7 +103,15 @@ def sentence3() -> Expr:
     (Project update: for this question only, [0] and _t are both acceptable.)
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    PacmanAlive_0 = PropSymbolExpr("PacmanAlive", 0)
+    PacmanAlive_1 = PropSymbolExpr("PacmanAlive", 1)
+    PacmanBorn_0 = PropSymbolExpr("PacmanBorn", 0)
+    PacmanKilled_0 = PropSymbolExpr("PacmanKilled", 0)
+
+    sentenceA = PacmanAlive_1 % ((PacmanAlive_0 & ~PacmanKilled_0) | (~PacmanAlive_0 & PacmanBorn_0))
+    sentenceB = ~(PacmanAlive_0 & PacmanBorn_0)
+
+    return conjoin([sentenceA, sentenceB, PacmanBorn_0])
     "*** END YOUR CODE HERE ***"
 
 def findModel(sentence: Expr) -> Dict[Expr, bool]:
@@ -109,14 +136,16 @@ def findModelCheck() -> Dict[Any, bool]:
         def __repr__(self):
             return self.variable_name
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    temp = dummyClass('a')
+    dt = {temp: True}
+    return dt
     "*** END YOUR CODE HERE ***"
 
 def entails(premise: Expr, conclusion: Expr) -> bool:
     """Returns True if the premise entails the conclusion and False otherwise.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return type(findModel(conjoin(premise, ~conclusion))) != type({})
     "*** END YOUR CODE HERE ***"
 
 def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> bool:
@@ -124,7 +153,7 @@ def plTrueInverse(assignments: Dict[Expr, bool], inverse_statement: Expr) -> boo
     pl_true may be useful here; see logic.py for its description.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return pl_true(to_cnf(~inverse_statement), assignments)
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
@@ -150,7 +179,7 @@ def atLeastOne(literals: List[Expr]) -> Expr:
     True
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return disjoin(literals)
     "*** END YOUR CODE HERE ***"
 
 
@@ -162,7 +191,9 @@ def atMostOne(literals: List[Expr]) -> Expr:
     itertools.combinations may be useful here.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    negations = [~X for X in literals]
+    clauses = [disjoin(list(comb)) for comb in itertools.combinations(negations, 2)]
+    return conjoin(clauses)
     "*** END YOUR CODE HERE ***"
 
 
@@ -173,7 +204,10 @@ def exactlyOne(literals: List[Expr]) -> Expr:
     the expressions in the list is true.
     """
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    negations = [~X for X in literals]
+    clauses = [disjoin(list(comb)) for comb in itertools.combinations(negations, 2)]
+    clauses.append(disjoin(literals))
+    return conjoin(clauses)
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
@@ -206,7 +240,8 @@ def pacmanSuccessorAxiomSingle(x: int, y: int, time: int, walls_grid: List[List[
         return None
     
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    P_x_y_t = PropSymbolExpr(pacman_str, x, y, time=now)
+    return P_x_y_t % disjoin(possible_causes)
     "*** END YOUR CODE HERE ***"
 
 
@@ -217,6 +252,7 @@ def SLAMSuccessorAxiomSingle(x: int, y: int, time: int, walls_grid: List[List[bo
     Available actions are ['North', 'East', 'South', 'West']
     """
     now, last = time, time - 1
+
     moved_causes: List[Expr] = [] # enumerate all possible causes for P[x,y]_t, assuming moved to having moved
     if walls_grid[x][y+1] != 1:
         moved_causes.append( PropSymbolExpr(pacman_str, x, y+1, time=last)
@@ -275,9 +311,33 @@ def pacphysicsAxioms(t: int, all_coords: List[Tuple], non_outer_wall_coords: Lis
             locations on this time step. Consider edge cases. Don't call if None.
     """
     pacphysics_sentences = []
-
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    # sentence 1
+    for coord in all_coords:
+        wall_x_y = PropSymbolExpr(wall_str, coord[0], coord[1])
+        pacman_x_y_t = PropSymbolExpr(pacman_str, coord[0], coord[1], time=t)
+        pacphysics_sentences.append(wall_x_y >> ~pacman_x_y_t)
+
+    # sentence 2
+    literals = []
+    for coord in non_outer_wall_coords:
+        pacman_x_y_t = PropSymbolExpr(pacman_str, coord[0], coord[1], time=t)
+        literals.append(pacman_x_y_t)
+    pacphysics_sentences.append(exactlyOne(literals))
+
+    # sentence 3
+    actions = []
+    for action in DIRECTIONS:
+        actions.append(PropSymbolExpr(action, time=t))
+    pacphysics_sentences.append(exactlyOne(actions))
+
+    # sentence 4
+    if(sensorModel != None):
+        pacphysics_sentences.append(sensorModel(t, non_outer_wall_coords))
+
+    # sentence 5
+    if(successorAxioms != None and t != 0):
+        pacphysics_sentences.append(successorAxioms(t, walls_grid, non_outer_wall_coords))
     "*** END YOUR CODE HERE ***"
 
     return conjoin(pacphysics_sentences)
@@ -298,6 +358,7 @@ def checkLocationSatisfiability(x1_y1: Tuple[int, int], x0_y0: Tuple[int, int], 
         - a model where Pacman is at (x1, y1) at time t = 1
         - a model where Pacman is not at (x1, y1) at time t = 1
     """
+
     walls_grid = problem.walls
     walls_list = walls_grid.asList()
     all_coords = list(itertools.product(range(problem.getWidth()+2), range(problem.getHeight()+2)))
@@ -310,8 +371,18 @@ def checkLocationSatisfiability(x1_y1: Tuple[int, int], x0_y0: Tuple[int, int], 
     map_sent = [PropSymbolExpr(wall_str, x, y) for x, y in walls_list]
     KB.append(conjoin(map_sent))
 
+    KB.append(pacphysicsAxioms(0, all_coords, non_outer_wall_coords, walls_grid, None, allLegalSuccessorAxioms))
+    KB.append(pacphysicsAxioms(1, all_coords, non_outer_wall_coords, walls_grid, None, allLegalSuccessorAxioms))
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
+    KB.append(PropSymbolExpr(action0, time=0))
+    KB.append(PropSymbolExpr(action1, time=1))
+
+    pacman_x1_y1 = PropSymbolExpr(pacman_str, x1, y1, time=1)
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    model11 = findModel(conjoin(KB + [pacman_x1_y1]))
+    model12 = findModel(conjoin(KB + [~pacman_x1_y1]))
+
+    return (model11, model12)
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
@@ -336,9 +407,18 @@ def positionLogicPlan(problem) -> List:
     non_wall_coords = [loc for loc in all_coords if loc not in walls_list]
     actions = [ 'North', 'South', 'East', 'West' ]
     KB = []
-
+    KB.append(PropSymbolExpr(pacman_str, x0, y0, time=0))
     "*** BEGIN YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    for t in range(50):
+        print(t)
+        KB.append(exactlyOne([PropSymbolExpr(pacman_str, wallX, wallY, time=t) for (wallX, wallY) in non_wall_coords]))
+        KB.append(exactlyOne([PropSymbolExpr(action, time=t) for action in actions]))
+        if t != 0:
+            for coord in non_wall_coords:
+                KB.append(pacmanSuccessorAxiomSingle(coord[0], coord[1], t, walls_grid))
+        goalModal = findModel(conjoin(KB + [PropSymbolExpr(pacman_str, xg, yg, time=t)]))
+        if goalModal:
+            return extractActionSequence(goalModal, actions)
     "*** END YOUR CODE HERE ***"
 
 #______________________________________________________________________________
